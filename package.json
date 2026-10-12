@@ -1,0 +1,52 @@
+{
+  "name": "@promptstudio/cli",
+  "version": "0.1.0",
+  "description": "Prompt Studio CLI — save, search, and use prompts from your terminal",
+  "type": "module",
+  "bin": {
+    "ps": "./dist/index.js",
+    "promptstudio": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/promptalchemy/prompt-studio-cli.git"
+  },
+  "keywords": [
+    "prompt-studio",
+    "prompts",
+    "cli",
+    "mcp"
+  ],
+  "author": "Quick One B.V.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/promptalchemy/prompt-studio-cli/issues"
+  },
+  "homepage": "https://github.com/promptalchemy/prompt-studio-cli#readme",
+  "dependencies": {
+    "@modelcontextprotocol/client": "^2.3.1",
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
