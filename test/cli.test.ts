@@ -101,6 +101,37 @@ describe("cli", () => {
     const got = capture();
     expect(await run(["node", "ps", "get", "Cup"], runtime(got.io, studio()))).toBe(0);
     expect(got.out()).toBe("a calm ceramic cup\n");
+    expect(got.err()).toBe("");
+  });
+
+  it("prints an imported source on stderr and in json", async () => {
+    const connected = studio({
+      async getPrompt() {
+        return {
+          id: "p1",
+          name: "Cup",
+          phrase: "a calm ceramic cup",
+          folder: null,
+          accessRole: "owner",
+          assets: [],
+          sourceUrl: "https://x.com/promptstudio/status/1",
+          sourceType: "x",
+        };
+      },
+    });
+    const got = capture();
+    expect(await run(["node", "ps", "get", "Cup"], runtime(got.io, connected))).toBe(0);
+    expect(got.out()).toBe("a calm ceramic cup\n");
+    expect(got.err()).toBe("Source: x.com/promptstudio/status/1\n");
+
+    const json = capture();
+    expect(await run(["node", "ps", "get", "Cup", "--json"], runtime(json.io, connected))).toBe(0);
+    expect(JSON.parse(json.out())).toMatchObject({
+      phrase: "a calm ceramic cup",
+      sourceUrl: "https://x.com/promptstudio/status/1",
+      sourceType: "x",
+    });
+    expect(json.err()).toBe("");
   });
 
   it("saves stdin into a folder and generates an image url", async () => {

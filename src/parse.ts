@@ -9,6 +9,7 @@ import type {
   PromptAsset,
   PromptDetail,
   PromptPage,
+  PromptSourceType,
   PromptSummary,
   SavedPrompt,
   UserProfile,
@@ -94,6 +95,19 @@ function assetOf(value: unknown): PromptAsset | undefined {
   };
 }
 
+function sourceUrlOf(record: Record<string, unknown> | undefined): string | undefined {
+  const raw = asString(record?.source_url) ?? asString(record?.sourceUrl);
+  const trimmed = raw?.trim();
+  if (!trimmed || !isHttpUrl(trimmed)) return undefined;
+  return trimmed;
+}
+
+function sourceTypeOf(record: Record<string, unknown> | undefined): PromptSourceType | undefined {
+  const raw = (asString(record?.source_type) ?? asString(record?.sourceType))?.trim().toLowerCase();
+  if (raw === "x" || raw === "web") return raw;
+  return undefined;
+}
+
 export function parsePromptDetail(payload: unknown): PromptDetail {
   const record = asRecord(payload) ?? asRecord(asRecord(payload)?.prompt);
   const id = asString(record?.id);
@@ -102,6 +116,8 @@ export function parsePromptDetail(payload: unknown): PromptDetail {
     const asset = assetOf(item);
     return asset ? [asset] : [];
   }) : [];
+  const sourceUrl = sourceUrlOf(record);
+  const sourceType = sourceTypeOf(record);
   return {
     id,
     name: asString(record?.name) ?? "untitled prompt",
@@ -109,6 +125,8 @@ export function parsePromptDetail(payload: unknown): PromptDetail {
     folder: folderOf(record?.folder),
     accessRole: asString(record?.access_role) ?? asString(record?.accessRole) ?? null,
     assets,
+    ...(sourceUrl ? { sourceUrl } : {}),
+    ...(sourceType ? { sourceType } : {}),
   };
 }
 
