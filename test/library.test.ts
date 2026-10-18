@@ -4,7 +4,7 @@ import { parseCredits, parseFolders, parseModels, parsePromptDetail, parsePrompt
 import { pickPrompt, resolveFolder } from "../src/resolve.js";
 import { readPhrase } from "../src/phrase.js";
 import { waitForGeneration } from "../src/generate.js";
-import { formatPromptPage, formatUser } from "../src/format.js";
+import { dimLine, formatPromptPage, formatSourceLine, formatUser, supportsColor } from "../src/format.js";
 import { browserLaunch } from "../src/browser.js";
 import { loopbackRedirects } from "../src/loopback.js";
 import { configDir } from "../src/paths.js";
@@ -35,7 +35,11 @@ describe("parsers", () => {
     ]);
     const page = parsePromptPage({ page: 1, page_size: 2, total: 10, prompts: [prompt] });
     expect(page.prompts[0]?.folder?.name).toBe("Ward");
-    expect(parsePromptDetail({ ...prompt, phrase: "full text", assets: [] }).phrase).toBe("full text");
+    const detail = parsePromptDetail({ ...prompt, phrase: "full text", assets: [] });
+    expect(detail.phrase).toBe("full text");
+    expect(detail.sourceUrl).toBeUndefined();
+    expect(detail.sourceType).toBeUndefined();
+    expect(formatSourceLine(detail.sourceUrl)).toBeUndefined();
     const models = parseModels({
       default_model_id: "flux-2-pro",
       models: [{ id: "flux-2-pro", name: "Flux 2 Pro", credits_cost: 1, supports_refs: true, in_picker: true }],
@@ -43,6 +47,71 @@ describe("parsers", () => {
     });
     expect(models.defaultModelId).toBe("flux-2-pro");
     expect(models.models.map((model) => model.id)).toEqual(["flux-2-pro", "recraft-v4"]);
+  });
+});
+
+describe("prompt source", () => {
+  it("reads source_url and source_type and prints a compact line", () => {
+    const detail = parsePromptDetail({
+      ...prompt,
+      phrase: "full text",
+      assets: [],
+      source_url: "https://x.com/promptstudio/status/1",
+      source_type: "x",
+    });
+    expect(detail.sourceUrl).toBe("https://x.com/promptstudio/status/1");
+    expect(detail.sourceType).toBe("x");
+    expect(formatSourceLine(detail.sourceUrl)).toBe("Source: x.com/promptstudio/status/1");
+    expect(JSON.parse(JSON.stringify(detail))).toMatchObject({
+      sourceUrl: "https://x.com/promptstudio/status/1",
+      sourceType: "x",
+    });
+  });
+
+  it("accepts camelCase fields and a web page", () => {
+    const detail = parsePromptDetail({
+      id: prompt.id,
+      phrase: "full text",
+      sourceUrl: "https://example.com/posts/1?ref=a",
+      sourceType: "web",
+    });
+    expect(detail.sourceType).toBe("web");
+    expect(formatSourceLine(detail.sourceUrl)).toBe("Source: example.com/posts/1?ref=a");
+  });
+
+  it("ignores a blank url, a non-http url, and an unknown source type", () => {
+    const detail = parsePromptDetail({
+      ...prompt,
+      phrase: "full text",
+      assets: [],
+      source_url: "  ",
+      source_type: "tweet",
+    });
+    expect(detail.sourceUrl).toBeUndefined();
+    expect(detail.sourceType).toBeUndefined();
+    expect("sourceUrl" in detail).toBe(false);
+    const unsafe = parsePromptDetail({ id: prompt.id, phrase: "full text", source_url: "javascript:alert(1)", source_type: "web" });
+    expect(unsafe.sourceUrl).toBeUndefined();
+    expect(unsafe.sourceType).toBe("web");
+  });
+
+  it("shows a source url when an older server omits source_type", () => {
+    const detail = parsePromptDetail({
+      id: prompt.id,
+      phrase: "full text",
+      source_url: "https://chatgpt.com/share/abc",
+    });
+    expect(detail.sourceType).toBeUndefined();
+    expect(formatSourceLine(detail.sourceUrl)).toBe("Source: chatgpt.com/share/abc");
+  });
+
+  it("dims the source line only when the terminal uses color", () => {
+    expect(dimLine("Source: x.com/a", true)).toBe("\u001b[2mSource: x.com/a\u001b[22m");
+    expect(dimLine("Source: x.com/a", false)).toBe("Source: x.com/a");
+    expect(supportsColor({ NO_COLOR: "1" }, true)).toBe(false);
+    expect(supportsColor({ TERM: "dumb" }, true)).toBe(false);
+    expect(supportsColor({}, false)).toBe(false);
+    expect(supportsColor({}, true)).toBe(true);
   });
 });
 

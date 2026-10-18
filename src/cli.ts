@@ -1,7 +1,7 @@
 import path from "node:path";
 import { Command, CommanderError } from "commander";
 import { classifyError, errorPayload } from "./errors.js";
-import { formatCredits, formatFolders, formatModels, formatPromptPage, formatUser, pageHint, printJson } from "./format.js";
+import { dimLine, formatCredits, formatFolders, formatModels, formatPromptPage, formatSourceLine, formatUser, pageHint, printJson, supportsColor } from "./format.js";
 import { waitForGeneration } from "./generate.js";
 import { connectStudio } from "./mcp.js";
 import { login as loginWithBrowser } from "./oauth.js";
@@ -203,8 +203,16 @@ Examples:
         const found = await studio.searchPrompts(selector, { page: 1, pageSize: 20 });
         return studio.getPrompt(pickPrompt(selector, found.prompts).id);
       });
-      if (wantsJson(this)) runtime.io.stdout(printJson(detail));
-      else runtime.io.stdout(detail.phrase.endsWith("\n") ? detail.phrase : `${detail.phrase}\n`);
+      if (wantsJson(this)) {
+        runtime.io.stdout(printJson(detail));
+        return;
+      }
+      runtime.io.stdout(detail.phrase.endsWith("\n") ? detail.phrase : `${detail.phrase}\n`);
+      const source = formatSourceLine(detail.sourceUrl);
+      if (source) {
+        const colored = supportsColor(runtime.env, Boolean(process.stderr.isTTY));
+        runtime.io.stderr(`${dimLine(source, colored)}\n`);
+      }
     });
 
   withCommon(program.command("save").description("Save a prompt from arguments or stdin"))

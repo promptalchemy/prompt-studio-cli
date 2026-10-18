@@ -67,6 +67,8 @@ ps generate <prompt-id> --model flux-2-pro
 ps get "my prompt" | pbcopy
 ```
 
+When the prompt was imported, `get` also writes a `Source:` line to stderr (`Source: x.com/...`). That line is dim on a color terminal and plain text otherwise, and it stays off stdout so the phrase can still be piped. `--json` includes `sourceUrl` and `sourceType` (`x` or `web`) when the server sends them. A server that does not send those fields yet still returns the phrase.
+
 `save` reads the prompt from the arguments, or from stdin when they are omitted. `--title` sets the name. `--folder` accepts a folder name or id.
 
 `generate` queues an image through Prompt Studio, polls until it finishes, and prints the output URL. The default model is `flux-2-pro`. `ps models` lists the ids your account can use. Generation needs Pro and image credits. `--timeout` is seconds (default 180).

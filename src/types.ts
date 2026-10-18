@@ -43,6 +43,9 @@ export interface PromptAsset {
   url: string | null;
 }
 
+/** Where an imported prompt came from. Generated server-side from `source_url`. */
+export type PromptSourceType = "x" | "web";
+
 export interface PromptDetail {
   id: string;
   name: string;
@@ -50,6 +53,13 @@ export interface PromptDetail {
   folder: { id: string; name: string } | null;
   accessRole: string | null;
   assets: PromptAsset[];
+  /**
+   * Original link for an imported prompt (tweet, web page, or chat share).
+   * Omitted when the prompt was written in Prompt Studio, or when the server
+   * does not send the field yet.
+   */
+  sourceUrl?: string;
+  sourceType?: PromptSourceType;
 }
 
 export interface SavedPrompt {

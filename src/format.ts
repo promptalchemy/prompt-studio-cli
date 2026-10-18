@@ -4,6 +4,38 @@ export function printJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+/** True when a status line may use ANSI color. Honors NO_COLOR and a dumb terminal. */
+export function supportsColor(env: NodeJS.ProcessEnv, isTTY: boolean): boolean {
+  if (!isTTY) return false;
+  if (env.TERM === "dumb") return false;
+  if (typeof env.NO_COLOR === "string" && env.NO_COLOR !== "") return false;
+  if (env.FORCE_COLOR === "0") return false;
+  return true;
+}
+
+export function dimLine(text: string, color: boolean): string {
+  if (!color) return text;
+  return `\u001b[2m${text}\u001b[22m`;
+}
+
+/** Drop the scheme so a source line reads `x.com/...` instead of a full URL. */
+export function compactSourceUrl(sourceUrl: string): string {
+  try {
+    const url = new URL(sourceUrl);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return sourceUrl;
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    return `${url.host}${path === "/" ? "" : path}`;
+  } catch {
+    return sourceUrl;
+  }
+}
+
+/** Subtle source line for an imported prompt. Undefined when the prompt has no source. */
+export function formatSourceLine(sourceUrl: string | null | undefined): string | undefined {
+  if (!sourceUrl) return undefined;
+  return `Source: ${compactSourceUrl(sourceUrl)}`;
+}
+
 export function formatUser(user: UserProfile): string {
   const lines = [
     user.name ? `Name: ${user.name}` : undefined,
